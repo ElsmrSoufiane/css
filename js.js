@@ -15,82 +15,66 @@
     const THRESHOLD = 1000;
     const STORAGE_KEY = 'cart_popup_shown_for_total';
     
-    // Fonction pour nettoyer et extraire le nombre correctement
+    // Fonction SIMPLIFIÉE pour extraire le nombre
     function extractNumber(text) {
         if (!text) return null;
         
         console.log('🔢 Texte original:', text);
         
-        // 1. Enlève "DH" et les espaces
-        let cleaned = text.replace(/DH|MAD|€|\$|dhs|dirham/gi, '').trim();
-        console.log('🔢 Après suppression devise:', cleaned);
+        // 1. Garde UNIQUEMENT les chiffres
+        // "1,050.00 DH" → "105000"
+        let onlyNumbers = text.replace(/[^\d]/g, '');
+        console.log('🔢 Seulement les chiffres:', onlyNumbers);
         
-        // 2. Gère le format "1,050.00" (virgule comme séparateur milliers, point comme décimale)
-        // Si on a une virgule ET un point
-        if (cleaned.includes(',') && cleaned.includes('.')) {
-            // Si la virgule est avant le point (séparateur milliers)
-            const lastPointIndex = cleaned.lastIndexOf('.');
-            const lastCommaIndex = cleaned.lastIndexOf(',');
-            
-            if (lastCommaIndex < lastPointIndex) {
-                // Format: 1,050.00 → virgule = séparateur milliers, point = décimale
-                // Enlève toutes les virgules (séparateurs milliers)
-                cleaned = cleaned.replace(/,/g, '');
-                console.log('🔢 Virgules (séparateurs) enlevées ->', cleaned);
-            } else {
-                // Format: 1.050,00 → point = séparateur milliers, virgule = décimale
-                cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-                console.log('🔢 Points enlevés, virgule -> point ->', cleaned);
+        // 2. Convertit en nombre
+        // "105000" → 105000 (mais on veut 1050.00)
+        let number = parseInt(onlyNumbers, 10);
+        
+        // 3. Si le nombre est trop grand, c'est qu'il y avait des décimales
+        // On divise par 100 si le texte original contenait des décimales (.00 ou ,00)
+        if (text.includes('.') || text.includes(',')) {
+            // Vérifie si c'est formaté avec 2 décimales
+            if (text.match(/[.,]\d{2}\s*DH/)) {
+                number = number / 100;
+                console.log('🔢 Division par 100 (décimales détectées):', number);
             }
         }
-        // 3. Gère seulement virgule (peut être séparateur OU décimale)
-        else if (cleaned.includes(',')) {
-            // Vérifie si c'est un séparateur de milliers (ex: "1,050")
-            const parts = cleaned.split(',');
-            if (parts.length === 2 && parts[1].length === 3) {
-                // "1,050" → séparateur milliers
-                cleaned = cleaned.replace(',', '');
-                console.log('🔢 Virgule = séparateur milliers ->', cleaned);
-            } else {
-                // "1050,50" → virgule décimale
-                cleaned = cleaned.replace(',', '.');
-                console.log('🔢 Virgule = décimale ->', cleaned);
-            }
-        }
-        // 4. Gère seulement point
-        else if (cleaned.includes('.')) {
-            // Vérifie si c'est un séparateur de milliers (ex: "1.050")
-            const parts = cleaned.split('.');
-            if (parts.length === 2 && parts[1].length === 3) {
-                // "1.050" → séparateur milliers
-                cleaned = cleaned.replace(/\./g, '');
-                console.log('🔢 Point = séparateur milliers ->', cleaned);
-            }
-            // Sinon c'est une décimale, on garde le point
-        }
         
-        // 5. Enlève tous les caractères non numériques sauf le point décimal
-        cleaned = cleaned.replace(/[^\d.-]/g, '');
-        
-        // 6. Gère les cas où il y a plusieurs points (ex: "1.050.00" - erreur de format)
-        const points = (cleaned.match(/\./g) || []).length;
-        if (points > 1) {
-            // Garde le dernier point comme décimale, enlève les autres
-            const lastPointIndex = cleaned.lastIndexOf('.');
-            const beforeLast = cleaned.substring(0, lastPointIndex).replace(/\./g, '');
-            const afterLast = cleaned.substring(lastPointIndex);
-            cleaned = beforeLast + afterLast;
-            console.log('🔢 Points multiples corrigés ->', cleaned);
-        }
-        
-        console.log('🔢 Après nettoyage final:', cleaned);
-        
-        // 7. Parse en nombre
-        let number = parseFloat(cleaned);
         console.log('🔢 Nombre final:', number);
-        
-        return isNaN(number) ? null : number;
+        return number;
     }
+    
+    // Alternative encore plus simple : prendre tout ce qui est avant "DH" et enlever les séparateurs
+    function extractNumberSimple(text) {
+        if (!text) return null;
+        
+        console.log('🔢 Texte original:', text);
+        
+        // Prend tout ce qui est avant "DH"
+        let beforeDH = text.split('DH')[0].trim();
+        console.log('🔢 Avant DH:', beforeDH);
+        
+        // Enlève tous les caractères non chiffres
+        let onlyNumbers = beforeDH.replace(/[^\d]/g, '');
+        console.log('🔢 Chiffres seuls:', onlyNumbers);
+        
+        // Convertit en nombre
+        let number = parseInt(onlyNumbers, 10);
+        
+        // Ajuste pour les décimales (si le format a 2 chiffres après le dernier séparateur)
+        let match = beforeDH.match(/[.,](\d{2})$/);
+        if (match) {
+            // Si on a des décimales à la fin, on divise par 100
+            number = number / 100;
+            console.log('🔢 Décimales détectées, division par 100:', number);
+        }
+        
+        console.log('🔢 Nombre final:', number);
+        return number;
+    }
+    
+    // Utilise la version simple
+    const extractNumber = extractNumberSimple;
     
     // Fonction pour extraire le total du HTML
     function getTotalFromDOM() {
@@ -175,8 +159,8 @@
         `;
         document.head.appendChild(style);
         
-        // Formater le total pour l'affichage (avec séparateur milliers)
-        const formattedTotal = total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        // Formater le total pour l'affichage
+        const formattedTotal = total.toFixed(2).replace('.', ',');
         
         popup.innerHTML = `
             <div style="font-size: 50px; margin-bottom: 20px;">🎉</div>
@@ -236,17 +220,26 @@
     function checkThreshold(total) {
         if (total === null) return;
         
+        console.log('📊 Vérification - Total:', total, 'Seuil:', THRESHOLD);
+        
         if (total >= THRESHOLD) {
+            console.log('🎯 Seuil atteint!');
             if (shouldShowPopup(total)) {
                 showPopup(total);
             }
+        } else {
+            console.log('📉 En dessous du seuil');
         }
     }
     
     function initProgressBar() {
+        console.log('🔄 Initialisation...');
         const total = getTotalFromDOM();
         if (total !== null) {
+            console.log('💰 Total extrait:', total);
             checkThreshold(total);
+        } else {
+            console.log('❌ Total non trouvé');
         }
     }
     
@@ -272,6 +265,7 @@
     // Écouter les clics
     document.addEventListener('click', function(e) {
         if (e.target.closest(SELECTORS.quantityButtons)) {
+            console.log('👆 Clic sur bouton quantité');
             setTimeout(initProgressBar, 500);
             setTimeout(initProgressBar, 1000);
         }
