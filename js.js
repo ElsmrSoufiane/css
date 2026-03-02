@@ -19,53 +19,73 @@
     function extractNumber(text) {
         if (!text) return null;
         
-        console.log('🔢 Texte原始:', text);
+        console.log('🔢 Texte original:', text);
         
         // 1. Enlève "DH" et les espaces
         let cleaned = text.replace(/DH|MAD|€|\$|dhs|dirham/gi, '').trim();
         console.log('🔢 Après suppression devise:', cleaned);
         
-        // 2. Remplace les espaces insécables et normaux
-        cleaned = cleaned.replace(/\s/g, '');
-        console.log('🔢 Après suppression espaces:', cleaned);
-        
-        // 3. Gère le cas où le point est utilisé comme séparateur de milliers
-        // Si on a un pattern comme "1.050" ou "1.050,00"
-        if (cleaned.includes('.') && !cleaned.includes(',')) {
-            // Compte le nombre de points
-            const points = (cleaned.match(/\./g) || []).length;
+        // 2. Gère le format "1,050.00" (virgule comme séparateur milliers, point comme décimale)
+        // Si on a une virgule ET un point
+        if (cleaned.includes(',') && cleaned.includes('.')) {
+            // Si la virgule est avant le point (séparateur milliers)
+            const lastPointIndex = cleaned.lastIndexOf('.');
+            const lastCommaIndex = cleaned.lastIndexOf(',');
             
-            if (points === 1) {
-                // Un seul point : peut être décimal OU séparateur de milliers
-                // Vérifie si après le point il y a exactement 3 chiffres (séparateur de milliers)
-                const afterPoint = cleaned.split('.')[1];
-                if (afterPoint && afterPoint.length === 3 && !cleaned.includes(',')) {
-                    // C'est un séparateur de milliers, on enlève le point
-                    cleaned = cleaned.replace(/\./g, '');
-                    console.log('🔢 Point = séparateur milliers ->', cleaned);
-                }
-                // Sinon c'est une décimale, on garde le point
-            } else if (points > 1) {
-                // Plusieurs points = séparateurs de milliers, on les enlève tous
-                cleaned = cleaned.replace(/\./g, '');
-                console.log('🔢 Points multiples enlevés ->', cleaned);
+            if (lastCommaIndex < lastPointIndex) {
+                // Format: 1,050.00 → virgule = séparateur milliers, point = décimale
+                // Enlève toutes les virgules (séparateurs milliers)
+                cleaned = cleaned.replace(/,/g, '');
+                console.log('🔢 Virgules (séparateurs) enlevées ->', cleaned);
+            } else {
+                // Format: 1.050,00 → point = séparateur milliers, virgule = décimale
+                cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+                console.log('🔢 Points enlevés, virgule -> point ->', cleaned);
             }
         }
-        
-        // 4. Gère la virgule comme décimale
-        if (cleaned.includes(',')) {
-            // Remplace la virgule par un point pour parseFloat
-            cleaned = cleaned.replace(',', '.');
-            // Enlève les autres virgules (séparateurs de milliers)
-            cleaned = cleaned.replace(/,/g, '');
-            console.log('🔢 Virgule remplacée par point ->', cleaned);
+        // 3. Gère seulement virgule (peut être séparateur OU décimale)
+        else if (cleaned.includes(',')) {
+            // Vérifie si c'est un séparateur de milliers (ex: "1,050")
+            const parts = cleaned.split(',');
+            if (parts.length === 2 && parts[1].length === 3) {
+                // "1,050" → séparateur milliers
+                cleaned = cleaned.replace(',', '');
+                console.log('🔢 Virgule = séparateur milliers ->', cleaned);
+            } else {
+                // "1050,50" → virgule décimale
+                cleaned = cleaned.replace(',', '.');
+                console.log('🔢 Virgule = décimale ->', cleaned);
+            }
+        }
+        // 4. Gère seulement point
+        else if (cleaned.includes('.')) {
+            // Vérifie si c'est un séparateur de milliers (ex: "1.050")
+            const parts = cleaned.split('.');
+            if (parts.length === 2 && parts[1].length === 3) {
+                // "1.050" → séparateur milliers
+                cleaned = cleaned.replace(/\./g, '');
+                console.log('🔢 Point = séparateur milliers ->', cleaned);
+            }
+            // Sinon c'est une décimale, on garde le point
         }
         
-        // 5. Nettoie les caractères non numériques restants
+        // 5. Enlève tous les caractères non numériques sauf le point décimal
         cleaned = cleaned.replace(/[^\d.-]/g, '');
+        
+        // 6. Gère les cas où il y a plusieurs points (ex: "1.050.00" - erreur de format)
+        const points = (cleaned.match(/\./g) || []).length;
+        if (points > 1) {
+            // Garde le dernier point comme décimale, enlève les autres
+            const lastPointIndex = cleaned.lastIndexOf('.');
+            const beforeLast = cleaned.substring(0, lastPointIndex).replace(/\./g, '');
+            const afterLast = cleaned.substring(lastPointIndex);
+            cleaned = beforeLast + afterLast;
+            console.log('🔢 Points multiples corrigés ->', cleaned);
+        }
+        
         console.log('🔢 Après nettoyage final:', cleaned);
         
-        // 6. Parse en nombre
+        // 7. Parse en nombre
         let number = parseFloat(cleaned);
         console.log('🔢 Nombre final:', number);
         
@@ -88,55 +108,29 @@
     
     function getLastPopupTotal() {
         const stored = localStorage.getItem(STORAGE_KEY);
-        console.log('💾 Dernier total enregistré:', stored);
         return stored ? parseFloat(stored) : null;
     }
     
     function savePopupTotal(total) {
-        console.log('💾 Sauvegarde du total:', total);
         localStorage.setItem(STORAGE_KEY, total.toString());
     }
     
     function shouldShowPopup(total) {
-        console.log('🤔 Vérification popup - Total:', total, 'Seuil:', THRESHOLD);
-        
-        if (total < THRESHOLD) {
-            console.log('📉 Total inférieur au seuil');
-            return false;
-        }
+        if (total < THRESHOLD) return false;
         
         const lastTotal = getLastPopupTotal();
         
-        if (!lastTotal) {
-            console.log('✅ Premier affichage');
-            return true;
-        }
+        if (!lastTotal) return true;
         
         // Arrondir pour éviter les problèmes de floating point
         const roundedTotal = Math.round(total * 100) / 100;
         const roundedLast = Math.round(lastTotal * 100) / 100;
         
-        if (roundedTotal > roundedLast) {
-            console.log('✅ Total augmenté');
-            return true;
-        }
-        
-        if (roundedTotal !== roundedLast) {
-            console.log('✅ Total différent');
-            return true;
-        }
-        
-        console.log('❌ Popup déjà affiché pour ce total');
-        return false;
+        return roundedTotal > roundedLast || roundedTotal !== roundedLast;
     }
     
     function showPopup(total) {
-        console.log('🎉 Affichage du popup pour:', total);
-        
-        if (document.getElementById('threshold-popup')) {
-            console.log('⚠️ Popup déjà existant');
-            return;
-        }
+        if (document.getElementById('threshold-popup')) return;
         
         savePopupTotal(total);
         
@@ -181,8 +175,8 @@
         `;
         document.head.appendChild(style);
         
-        // Formater le total pour l'affichage
-        const formattedTotal = total.toFixed(2).replace('.', ',');
+        // Formater le total pour l'affichage (avec séparateur milliers)
+        const formattedTotal = total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         
         popup.innerHTML = `
             <div style="font-size: 50px; margin-bottom: 20px;">🎉</div>
@@ -240,52 +234,32 @@
     }
     
     function checkThreshold(total) {
-        console.log('📊 Vérification du seuil - Total:', total);
-        
         if (total === null) return;
         
         if (total >= THRESHOLD) {
-            console.log('🎯 Seuil atteint!');
             if (shouldShowPopup(total)) {
                 showPopup(total);
             }
-        } else {
-            console.log('📉 En dessous du seuil');
         }
-    }
-    
-    function setProgressBar(total) {
-        const container = document.querySelector(SELECTORS.container);
-        if (!container || total === null) return;
-        
-        total = Math.round(total * 100) / 100;
-        container.style.setProperty('--total', total);
-        
-        checkThreshold(total);
-        
-        console.log('Barre mise à jour:', total, 'DH');
     }
     
     function initProgressBar() {
-        console.log('🔄 Initialisation...');
         const total = getTotalFromDOM();
         if (total !== null) {
-            console.log('💰 Total extrait:', total);
-            setProgressBar(total);
-        } else {
-            console.log('❌ Total non trouvé');
+            checkThreshold(total);
         }
     }
     
-    // Fonction de test
+    // Fonctions de test
     window.testPopup = function() {
-        console.log('🧪 Test manuel');
         showPopup(1050);
     };
     
     window.testExtract = function(text) {
         console.log('🧪 Test extraction:', text);
-        return extractNumber(text);
+        const result = extractNumber(text);
+        console.log('✅ Résultat:', result);
+        return result;
     };
     
     // Exécution
@@ -298,7 +272,6 @@
     // Écouter les clics
     document.addEventListener('click', function(e) {
         if (e.target.closest(SELECTORS.quantityButtons)) {
-            console.log('👆 Clic sur bouton quantité');
             setTimeout(initProgressBar, 500);
             setTimeout(initProgressBar, 1000);
         }
@@ -307,7 +280,6 @@
     // Vérification périodique
     setInterval(initProgressBar, 2000);
     
-    console.log('✅ Script prêt! Utilisez window.testPopup() pour tester');
-    console.log('✅ Utilisez window.testExtract("1.050 DH") pour tester l\'extraction');
+    console.log('✅ Script prêt! Teste avec: window.testExtract("1,050.00 DH")');
     
 })();
