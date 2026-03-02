@@ -1,18 +1,33 @@
-
 (function() {
     'use strict';
     
     // Configuration
     const SELECTORS = {
         total: '.ps-block--shopping-total .ps-block__content h3 span',
-        container: '.ps-block--shopping-total'
+        container: '.ps-block--shopping-total',
+        quantityButtons: '.up, .down, .remove-cart-button',
+        quantityInputs: 'input[name="quantity"]',
+        cartForm: '.form--shopping-cart'
     };
     
     // Constante pour le seuil
     const THRESHOLD = 1000;
     
-    // Variable pour suivre si le popup a déjà été affiché
-    let popupShown = false;
+    // Clé pour le localStorage
+    const STORAGE_KEY = 'cart_popup_shown_for_total';
+    
+    // Fonction pour nettoyer et extraire le nombre du texte
+    function extractNumber(text) {
+        if (!text) return null;
+        // Remplace la virgule par un point et garde seulement les chiffres, points et tirets
+        let cleaned = text.replace(/[^\d,.-]/g, '').replace(',', '.');
+        // Gère les cas où il y a plusieurs points
+        let parts = cleaned.split('.');
+        if (parts.length > 2) {
+            cleaned = parts[0] + '.' + parts.slice(1).join('');
+        }
+        return parseFloat(cleaned);
+    }
     
     // Fonction pour extraire le total du HTML
     function getTotalFromDOM() {
@@ -20,19 +35,69 @@
         if (!el) return null;
         
         let text = el.textContent.trim();
-        // Extrait le nombre (supprime tout sauf chiffres, point, virgule, tiret)
-        let numberPart = text.replace(/[^\d,.-]/g, '').replace(',', '.');
-        let total = parseFloat(numberPart);
+        let total = extractNumber(text);
         
         return isNaN(total) ? null : total;
     }
     
+    // Fonction pour obtenir le dernier total pour lequel le popup a été affiché
+    function getLastPopupTotal() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? parseFloat(stored) : null;
+    }
+    
+    // Fonction pour sauvegarder le total pour lequel le popup a été affiché
+    function savePopupTotal(total) {
+        localStorage.setItem(STORAGE_KEY, total.toString());
+        console.log('Popup total saved:', total); // Debug
+    }
+    
+    // Fonction pour vérifier si le popup doit être affiché pour ce total
+    function shouldShowPopup(total) {
+        if (total < THRESHOLD) {
+            console.log('Total below threshold:', total); // Debug
+            return false;
+        }
+        
+        const lastTotal = getLastPopupTotal();
+        console.log('Last total:', lastTotal, 'Current total:', total); // Debug
+        
+        // Afficher si :
+        // 1. Jamais affiché auparavant
+        // 2. Le total a augmenté au-dessus du seuil
+        // 3. Le total est différent du dernier enregistré (pour gérer les changements)
+        if (!lastTotal) {
+            console.log('First time showing popup'); // Debug
+            return true;
+        }
+        
+        // Si le total actuel est supérieur au dernier total enregistré
+        if (total > lastTotal) {
+            console.log('Total increased, showing popup'); // Debug
+            return true;
+        }
+        
+        // Si le total est différent (pour les cas où on change de produit mais même montant)
+        if (total !== lastTotal) {
+            console.log('Total changed, showing popup'); // Debug
+            return true;
+        }
+        
+        return false;
+    }
+    
     // Fonction pour afficher le popup
-    function showPopup() {
+    function showPopup(total) {
         // Vérifier si le popup existe déjà
         if (document.getElementById('threshold-popup')) {
+            console.log('Popup already exists'); // Debug
             return;
         }
+        
+        console.log('Showing popup for total:', total); // Debug
+        
+        // Sauvegarder le total pour lequel on affiche le popup
+        savePopupTotal(total);
         
         // Créer le popup
         const popup = document.createElement('div');
@@ -75,15 +140,16 @@
         `;
         document.head.appendChild(style);
         
-        // Contenu du popup
+        // Contenu du popup avec le total actuel
         popup.innerHTML = `
             <div style="font-size: 50px; margin-bottom: 20px; color: white;">🎉</div>
             <h2 style="margin: 0 0 15px 0; font-size: 28px;">Félicitations !</h2>
-            <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.5;color: white;">
+            <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.5; color: white;">
                 Votre panier a atteint <strong>${THRESHOLD} DH</strong> !<br>
+                Total actuel : <strong>${total} DH</strong><br>
                 Profitez de nos avantages exclusifs.
             </p>
-            <button onclick="this.parentElement.remove()" style="
+            <button onclick="this.closest('#threshold-popup').remove(); document.getElementById('popup-overlay')?.remove();" style="
                 background: white;
                 color: #764ba2;
                 border: none;
@@ -108,7 +174,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            color:white;
             background: rgba(0,0,0,0.5);
             z-index: 9998;
             animation: fadeIn 0.3s ease-out;
@@ -116,16 +181,13 @@
         
         // Fermer le popup quand on clique sur l'overlay
         overlay.onclick = function() {
-            popup.remove();
+            document.getElementById('threshold-popup')?.remove();
             this.remove();
         };
         
         // Ajouter au document
         document.body.appendChild(overlay);
         document.body.appendChild(popup);
-        
-        // Marquer comme affiché
-        popupShown = true;
         
         // Auto-fermeture après 10 secondes
         setTimeout(() => {
@@ -138,23 +200,22 @@
     
     // Fonction pour vérifier le seuil et afficher le popup
     function checkThreshold(total) {
-        if (total >= THRESHOLD && !popupShown) {
-            showPopup();
-        } else if (total < THRESHOLD) {
-            // Réinitialiser si le total redescend sous le seuil
-            popupShown = false;
-            
-            // Supprimer le popup s'il est encore affiché
-            const existingPopup = document.getElementById('threshold-popup');
-            const existingOverlay = document.getElementById('popup-overlay');
-            if (existingPopup) {
-                existingPopup.remove();
-                existingOverlay?.remove();
+        if (total === null) return;
+        
+        console.log('Checking threshold for total:', total); // Debug
+        
+        if (total >= THRESHOLD) {
+            if (shouldShowPopup(total)) {
+                showPopup(total);
+            } else {
+                console.log('Popup should not show for this total'); // Debug
             }
+        } else {
+            console.log('Total below threshold, no popup'); // Debug
         }
     }
     
-    // Fonction pour appliquer le total à la barre
+    // Fonction pour appliquer le total à la barre (si nécessaire)
     function setProgressBar(total) {
         const container = document.querySelector(SELECTORS.container);
         if (!container || total === null) return;
@@ -166,7 +227,6 @@
         // Vérifier le seuil pour le popup
         checkThreshold(total);
         
-        // DEBUG (optionnel)
         console.log('Barre mise à jour:', total, 'DH');
     }
     
@@ -180,66 +240,107 @@
         return false;
     }
     
+    // Fonction pour observer les changements de quantité
+    function observeQuantityChanges() {
+        // Observer les changements sur les inputs de quantité
+        const quantityInputs = document.querySelectorAll(SELECTORS.quantityInputs);
+        quantityInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                console.log('Quantity input changed'); // Debug
+                setTimeout(initProgressBar, 500); // Attendre que le total soit mis à jour
+            });
+        });
+    }
+    
+    // Fonction pour observer les mutations du DOM
+    function observeDOMChanges() {
+        const targetNode = document.querySelector(SELECTORS.container) || document.body;
+        
+        const observer = new MutationObserver(function(mutations) {
+            // Vérifier si le total a changé
+            const total = getTotalFromDOM();
+            if (total !== null) {
+                console.log('DOM mutation detected, checking total:', total); // Debug
+                checkThreshold(total);
+            }
+        });
+        
+        observer.observe(targetNode, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ['textContent', 'innerText']
+        });
+    }
+    
     // ===== EXÉCUTION MULTIPLE POUR ÊTRE SÛR =====
     
-    // 1. Exécution immédiate (dès que le script est chargé)
+    // 1. Exécution immédiate
     if (document.readyState === 'loading') {
-        // Si le document est en train de charger, on attend un peu
         setTimeout(initProgressBar, 50);
     } else {
-        // Si déjà chargé, on exécute directement
         initProgressBar();
     }
     
-    // 2. À chaque fois que le DOM est prêt
-    document.addEventListener('DOMContentLoaded', initProgressBar);
+    // 2. DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+        initProgressBar();
+        observeQuantityChanges();
+    });
     
-    // 3. Après chaque chargement complet (images, etc.)
+    // 3. Load complet
     window.addEventListener('load', function() {
         setTimeout(initProgressBar, 100);
+        observeQuantityChanges();
+        observeDOMChanges();
     });
     
-    // 4. À chaque clic sur les boutons du panier
+    // 4. Clics sur les boutons de quantité
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.up') || e.target.closest('.down') || e.target.closest('.remove-cart-button')) {
-            // Attendre que le DOM soit mis à jour
-            setTimeout(initProgressBar, 300);
+        if (e.target.closest(SELECTORS.quantityButtons)) {
+            console.log('Quantity button clicked'); // Debug
+            // Attendre plus longtemps pour laisser le temps à l'AJAX de se compléter
+            setTimeout(initProgressBar, 800);
+            // Deuxième tentative au cas où
+            setTimeout(initProgressBar, 1500);
         }
     });
     
-    // 5. À chaque soumission de formulaire (si le panier utilise AJAX)
+    // 5. Soumissions de formulaire
     document.addEventListener('submit', function(e) {
-        if (e.target.closest('.form--shopping-cart')) {
-            setTimeout(initProgressBar, 500);
+        if (e.target.closest(SELECTORS.cartForm)) {
+            console.log('Cart form submitted'); // Debug
+            setTimeout(initProgressBar, 800);
+            setTimeout(initProgressBar, 1500);
         }
     });
     
-    // 6. MutationObserver pour surveiller les changements du total
-    function observeTotalChanges() {
-        const target = document.querySelector(SELECTORS.total);
-        if (!target) return;
-        
-        const observer = new MutationObserver(function(mutations) {
-            // Ne pas réagir si c'est nous qui modifions
-            if (mutations.some(m => m.attributeName === 'style' && m.target === document.querySelector(SELECTORS.container))) {
-                return;
-            }
-            initProgressBar();
-        });
-        
-        observer.observe(target, {
-            childList: true,
-            characterData: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['textContent']
-        });
+    // 6. Observer les changements AJAX (si votre site utilise AJAX)
+    const originalFetch = window.fetch;
+    if (originalFetch) {
+        window.fetch = function() {
+            return originalFetch.apply(this, arguments).then(response => {
+                // Vérifier si c'est une requête liée au panier
+                if (arguments[0] && arguments[0].includes('cart') || arguments[0].includes('panier')) {
+                    console.log('Cart AJAX request detected'); // Debug
+                    setTimeout(initProgressBar, 500);
+                }
+                return response;
+            });
+        };
     }
     
-    // Démarrer l'observation après le chargement
-    setTimeout(observeTotalChanges, 500);
-    
-    // 7. Vérification périodique (filet de sécurité)
+    // 7. Vérification périodique (toutes les 2 secondes)
     setInterval(initProgressBar, 2000);
+    
+    // 8. Vérification plus fréquente pendant les 10 premières secondes
+    // (pour capturer les mises à jour initiales)
+    for (let i = 1; i <= 5; i++) {
+        setTimeout(initProgressBar, i * 300);
+    }
+    
+    // 9. Réinitialiser le localStorage (optionnel - pour tester)
+    // localStorage.removeItem(STORAGE_KEY);
     
 })();
