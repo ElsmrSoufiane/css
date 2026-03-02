@@ -15,66 +15,24 @@
     const THRESHOLD = 1000;
     const STORAGE_KEY = 'cart_popup_shown_for_total';
     
-    // Fonction SIMPLIFIÉE pour extraire le nombre
+    // Fonction TRÈS simple : enlève tout sauf les chiffres
     function extractNumber(text) {
         if (!text) return null;
         
         console.log('🔢 Texte original:', text);
         
-        // 1. Garde UNIQUEMENT les chiffres
-        // "1,050.00 DH" → "105000"
-        let onlyNumbers = text.replace(/[^\d]/g, '');
-        console.log('🔢 Seulement les chiffres:', onlyNumbers);
-        
-        // 2. Convertit en nombre
-        // "105000" → 105000 (mais on veut 1050.00)
-        let number = parseInt(onlyNumbers, 10);
-        
-        // 3. Si le nombre est trop grand, c'est qu'il y avait des décimales
-        // On divise par 100 si le texte original contenait des décimales (.00 ou ,00)
-        if (text.includes('.') || text.includes(',')) {
-            // Vérifie si c'est formaté avec 2 décimales
-            if (text.match(/[.,]\d{2}\s*DH/)) {
-                number = number / 100;
-                console.log('🔢 Division par 100 (décimales détectées):', number);
-            }
-        }
-        
-        console.log('🔢 Nombre final:', number);
-        return number;
-    }
-    
-    // Alternative encore plus simple : prendre tout ce qui est avant "DH" et enlever les séparateurs
-    function extractNumberSimple(text) {
-        if (!text) return null;
-        
-        console.log('🔢 Texte original:', text);
-        
-        // Prend tout ce qui est avant "DH"
-        let beforeDH = text.split('DH')[0].trim();
-        console.log('🔢 Avant DH:', beforeDH);
-        
-        // Enlève tous les caractères non chiffres
-        let onlyNumbers = beforeDH.replace(/[^\d]/g, '');
-        console.log('🔢 Chiffres seuls:', onlyNumbers);
+        // Garde seulement les chiffres (0-9)
+        // "1,050 DH" → "1050"
+        // "1,050.00 DH" → "105000" (mais on veut 1050)
+        let numbers = text.replace(/[^0-9]/g, '');
+        console.log('🔢 Chiffres extraits:', numbers);
         
         // Convertit en nombre
-        let number = parseInt(onlyNumbers, 10);
-        
-        // Ajuste pour les décimales (si le format a 2 chiffres après le dernier séparateur)
-        let match = beforeDH.match(/[.,](\d{2})$/);
-        if (match) {
-            // Si on a des décimales à la fin, on divise par 100
-            number = number / 100;
-            console.log('🔢 Décimales détectées, division par 100:', number);
-        }
-        
+        let number = parseInt(numbers, 10);
         console.log('🔢 Nombre final:', number);
+        
         return number;
     }
-    
-    // Utilise la version simple
-    const extractNumber = extractNumberSimple;
     
     // Fonction pour extraire le total du HTML
     function getTotalFromDOM() {
@@ -100,21 +58,37 @@
     }
     
     function shouldShowPopup(total) {
-        if (total < THRESHOLD) return false;
+        console.log('🤔 Vérification popup - Total:', total, 'Seuil:', THRESHOLD);
+        
+        if (total < THRESHOLD) {
+            console.log('📉 Total inférieur au seuil');
+            return false;
+        }
         
         const lastTotal = getLastPopupTotal();
+        console.log('💾 Dernier total enregistré:', lastTotal);
         
-        if (!lastTotal) return true;
+        if (!lastTotal) {
+            console.log('✅ Premier affichage');
+            return true;
+        }
         
-        // Arrondir pour éviter les problèmes de floating point
-        const roundedTotal = Math.round(total * 100) / 100;
-        const roundedLast = Math.round(lastTotal * 100) / 100;
+        if (total > lastTotal) {
+            console.log('✅ Total augmenté');
+            return true;
+        }
         
-        return roundedTotal > roundedLast || roundedTotal !== roundedLast;
+        console.log('❌ Popup déjà affiché pour ce total');
+        return false;
     }
     
     function showPopup(total) {
-        if (document.getElementById('threshold-popup')) return;
+        console.log('🎉 Affichage du popup pour:', total);
+        
+        if (document.getElementById('threshold-popup')) {
+            console.log('⚠️ Popup déjà existant');
+            return;
+        }
         
         savePopupTotal(total);
         
@@ -159,15 +133,12 @@
         `;
         document.head.appendChild(style);
         
-        // Formater le total pour l'affichage
-        const formattedTotal = total.toFixed(2).replace('.', ',');
-        
         popup.innerHTML = `
             <div style="font-size: 50px; margin-bottom: 20px;">🎉</div>
             <h2 style="margin: 0 0 15px 0; font-size: 28px;">Félicitations !</h2>
             <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.5;">
                 Votre panier a atteint <strong>${THRESHOLD} DH</strong> !<br>
-                Total actuel : <strong>${formattedTotal} DH</strong><br>
+                Total actuel : <strong>${total} DH</strong><br>
                 Profitez de nos avantages exclusifs.
             </p>
             <button onclick="this.closest('#threshold-popup').remove(); document.getElementById('popup-overlay')?.remove();" style="
@@ -220,7 +191,7 @@
     function checkThreshold(total) {
         if (total === null) return;
         
-        console.log('📊 Vérification - Total:', total, 'Seuil:', THRESHOLD);
+        console.log('📊 Vérification du seuil - Total:', total);
         
         if (total >= THRESHOLD) {
             console.log('🎯 Seuil atteint!');
@@ -274,6 +245,6 @@
     // Vérification périodique
     setInterval(initProgressBar, 2000);
     
-    console.log('✅ Script prêt! Teste avec: window.testExtract("1,050.00 DH")');
+    console.log('✅ Script prêt! Teste avec: window.testExtract("1,050 DH")');
     
 })();
