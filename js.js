@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     
-    console.log('🚀 Script de popup - VERSION FINALE 3.0');
+    console.log('🚀 Script de popup - VERSION FINALE 4.0');
     console.log('💰 Seuil configuré:', 1000, 'DH');
     
     // Configuration
@@ -13,80 +13,74 @@
     
     const THRESHOLD = 1000;
     const STORAGE_KEY = 'cart_popup_shown_for_total';
+    const POPUP_SHOWN_SESSION = 'cart_popup_shown_session';
     
     // Fonction ULTRA-SIMPLE pour extraire le nombre
     function extractNumber(text) {
         if (!text) return null;
         
-        console.log('📥 Texte reçu:', text);
-        
-        // Méthode 1: Supprimer tout ce qui n'est pas chiffre
-        // "1,050.00 DH" → "105000"
+        // Supprimer tout ce qui n'est pas chiffre
         let onlyDigits = text.replace(/[^0-9]/g, '');
-        console.log('🔢 Chiffres seuls:', onlyDigits);
         
         // Convertir en nombre
         let number = parseInt(onlyDigits, 10);
-        console.log('💯 Nombre brut:', number);
         
-        // Si le nombre est trop grand (plus de 3 chiffres après les milliers)
-        // "105000" → on divise par 100 car il y avait .00 à la fin
+        // Ajuster pour les décimales
         if (text.includes('.00') || text.includes(',00')) {
             number = number / 100;
-            console.log('💰 Après division par 100:', number);
         }
         
-        // Vérification finale
-        if (number > 1000000) {
-            // Si encore trop grand, on divise par 1000
-            number = number / 1000;
-            console.log('💰 Après division par 1000:', number);
-        }
-        
-        console.log('💰 Total final:', number);
         return number;
     }
     
     // Fonction pour obtenir le total
     function getTotalFromDOM() {
-        // Chercher l'élément spécifique
         let el = document.querySelector('.ps-block--shopping-total .ps-block__content h3 span');
         
-        // Si pas trouvé, chercher tous les spans qui contiennent "DH"
         if (!el) {
-            console.log('🔍 Recherche élargie...');
             const allSpans = document.querySelectorAll('span');
             for (let span of allSpans) {
                 if (span.textContent.includes('DH')) {
                     el = span;
-                    console.log('✅ Span trouvé avec DH:', span.textContent.trim());
                     break;
                 }
             }
         }
         
-        if (!el) {
-            console.log('❌ Aucun élément trouvé');
-            return null;
-        }
+        if (!el) return null;
         
         let text = el.textContent.trim();
-        console.log('📝 Texte à analyser:', text);
-        
         return extractNumber(text);
+    }
+    
+    // Vérifier si le popup a déjà été affiché dans cette session
+    function hasPopupBeenShown() {
+        return sessionStorage.getItem(POPUP_SHOWN_SESSION) === 'true';
+    }
+    
+    // Marquer le popup comme affiché
+    function markPopupAsShown() {
+        sessionStorage.setItem(POPUP_SHOWN_SESSION, 'true');
+    }
+    
+    // Réinitialiser le marqueur de popup
+    function resetPopupMarker() {
+        sessionStorage.removeItem(POPUP_SHOWN_SESSION);
     }
     
     // Fonction pour afficher le popup
     function showPopup(total) {
-        console.log('🎉 AFFICHAGE POPUP POUR:', total);
-        
-        if (document.getElementById('threshold-popup')) {
-            console.log('⚠️ Popup déjà affiché');
+        if (document.getElementById('threshold-popup')) return;
+        if (hasPopupBeenShown()) {
+            console.log('⏭️ Popup déjà affiché dans cette session');
             return;
         }
         
-        // Sauvegarder dans localStorage
+        console.log('🎉 AFFICHAGE POPUP POUR:', total);
+        
+        // Sauvegarder dans localStorage et sessionStorage
         localStorage.setItem(STORAGE_KEY, total.toString());
+        markPopupAsShown();
         
         // Créer le popup
         const popup = document.createElement('div');
@@ -175,12 +169,17 @@
     function checkAndShowPopup() {
         const total = getTotalFromDOM();
         
-        if (total && total >= THRESHOLD) {
-            const lastTotal = localStorage.getItem(STORAGE_KEY);
-            
-            if (!lastTotal || Math.abs(total - parseFloat(lastTotal)) > 1) {
-                showPopup(total);
-            }
+        if (!total) return;
+        
+        // Si le total est en dessous du seuil, réinitialiser le marqueur
+        if (total < THRESHOLD) {
+            resetPopupMarker();
+            return;
+        }
+        
+        // Si le total est au-dessus du seuil et que le popup n'a pas été affiché
+        if (total >= THRESHOLD && !hasPopupBeenShown()) {
+            showPopup(total);
         }
     }
     
@@ -189,43 +188,38 @@
         showPopup(1050);
     };
     
-    window.testExtract = function(text) {
-        console.log('🧪 Test extraction pour:', text);
-        return extractNumber(text);
-    };
-    
-    window.forceCheck = function() {
-        console.log('🔍 Vérification forcée...');
-        checkAndShowPopup();
+    window.resetPopup = function() {
+        resetPopupMarker();
+        console.log('🔄 Marqueur de popup réinitialisé');
     };
     
     window.debugTotal = function() {
         const total = getTotalFromDOM();
         console.log('💰 Total actuel:', total);
+        console.log('🚩 Popup déjà affiché:', hasPopupBeenShown());
         return total;
     };
     
     // Exécution
     console.log('🔄 Vérification initiale...');
-    setTimeout(checkAndShowPopup, 500);
-    setTimeout(checkAndShowPopup, 1000);
-    setTimeout(checkAndShowPopup, 2000);
     
-    // Surveiller les clics
+    // Vérifier au chargement
+    setTimeout(checkAndShowPopup, 500);
+    
+    // Surveiller les clics (moins fréquent)
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.up') || e.target.closest('.down') || e.target.closest('.remove')) {
-            console.log('👆 Changement quantité détecté');
-            setTimeout(checkAndShowPopup, 800);
+        if (e.target.closest('.up') || e.target.closest('.down') || 
+            e.target.closest('.remove-cart-button') || e.target.closest('.btn-apply-coupon-code')) {
+            setTimeout(checkAndShowPopup, 500);
         }
     });
     
-    // Vérification périodique
-    setInterval(checkAndShowPopup, 3000);
+    // Vérification périodique (mais moins fréquente)
+    setInterval(checkAndShowPopup, 5000); // Toutes les 5 secondes au lieu de 3
     
     console.log('✅ Script chargé! Commandes:');
     console.log('  testPopup() - Afficher popup test');
-    console.log('  testExtract("1,050 DH") - Tester extraction');
-    console.log('  debugTotal() - Voir total actuel');
-    console.log('  forceCheck() - Forcer vérification');
+    console.log('  resetPopup() - Réinitialiser le marqueur');
+    console.log('  debugTotal() - Voir total actuel et état');
     
 })();
