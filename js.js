@@ -1,7 +1,8 @@
 (function() {
     'use strict';
     
-    console.log('🚀 Script de popup démarré - Version 2.0');
+    console.log('🚀 Script de popup - VERSION FINALE 3.0');
+    console.log('💰 Seuil configuré:', 1000, 'DH');
     
     // Configuration
     const SELECTORS = {
@@ -13,56 +14,81 @@
     const THRESHOLD = 1000;
     const STORAGE_KEY = 'cart_popup_shown_for_total';
     
-    // Solution ULTIME pour extraire le nombre
+    // Fonction ULTRA-SIMPLE pour extraire le nombre
     function extractNumber(text) {
         if (!text) return null;
         
-        console.log('📥 Texte brut:', text);
+        console.log('📥 Texte reçu:', text);
         
-        // Méthode 1: Regex pour trouver le premier nombre
-        let matches = text.match(/[\d\s,]+(?:\.\d+)?/);
-        if (!matches) return null;
+        // Méthode 1: Supprimer tout ce qui n'est pas chiffre
+        // "1,050.00 DH" → "105000"
+        let onlyDigits = text.replace(/[^0-9]/g, '');
+        console.log('🔢 Chiffres seuls:', onlyDigits);
         
-        let numberStr = matches[0];
-        console.log('🔢 Nombre brut:', numberStr);
+        // Convertir en nombre
+        let number = parseInt(onlyDigits, 10);
+        console.log('💯 Nombre brut:', number);
         
-        // Enlève tous les espaces et virgules, garde le point
-        numberStr = numberStr.replace(/\s/g, '').replace(/,/g, '');
-        console.log('🧹 Nettoyé:', numberStr);
+        // Si le nombre est trop grand (plus de 3 chiffres après les milliers)
+        // "105000" → on divise par 100 car il y avait .00 à la fin
+        if (text.includes('.00') || text.includes(',00')) {
+            number = number / 100;
+            console.log('💰 Après division par 100:', number);
+        }
         
-        let number = parseFloat(numberStr);
-        console.log('💯 Résultat final:', number);
+        // Vérification finale
+        if (number > 1000000) {
+            // Si encore trop grand, on divise par 1000
+            number = number / 1000;
+            console.log('💰 Après division par 1000:', number);
+        }
         
-        return isNaN(number) ? null : number;
+        console.log('💰 Total final:', number);
+        return number;
     }
     
+    // Fonction pour obtenir le total
     function getTotalFromDOM() {
-        const el = document.querySelector(SELECTORS.total);
+        // Chercher l'élément spécifique
+        let el = document.querySelector('.ps-block--shopping-total .ps-block__content h3 span');
+        
+        // Si pas trouvé, chercher tous les spans qui contiennent "DH"
         if (!el) {
-            console.log('❌ Élément .ps-block--shopping-total .ps-block__content h3 span non trouvé');
-            
-            // Backup: cherche tous les spans qui pourraient contenir un prix
+            console.log('🔍 Recherche élargie...');
             const allSpans = document.querySelectorAll('span');
             for (let span of allSpans) {
-                if (span.textContent.includes('DH') || span.textContent.match(/\d+[\s,.]*\d+/)) {
-                    console.log('🔍 Span trouvé:', span.textContent.trim());
-                    return extractNumber(span.textContent);
+                if (span.textContent.includes('DH')) {
+                    el = span;
+                    console.log('✅ Span trouvé avec DH:', span.textContent.trim());
+                    break;
                 }
             }
+        }
+        
+        if (!el) {
+            console.log('❌ Aucun élément trouvé');
             return null;
         }
         
         let text = el.textContent.trim();
-        console.log('📝 Texte trouvé:', text);
+        console.log('📝 Texte à analyser:', text);
         
         return extractNumber(text);
     }
     
+    // Fonction pour afficher le popup
     function showPopup(total) {
-        if (document.getElementById('threshold-popup')) return;
+        console.log('🎉 AFFICHAGE POPUP POUR:', total);
         
+        if (document.getElementById('threshold-popup')) {
+            console.log('⚠️ Popup déjà affiché');
+            return;
+        }
+        
+        // Sauvegarder dans localStorage
         localStorage.setItem(STORAGE_KEY, total.toString());
         
+        // Créer le popup
         const popup = document.createElement('div');
         popup.id = 'threshold-popup';
         popup.style.cssText = `
@@ -81,8 +107,10 @@
             animation: slideIn 0.5s ease-out;
             max-width: 400px;
             width: 90%;
+            font-size: 16px;
         `;
         
+        // Style pour l'animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideIn {
@@ -92,12 +120,13 @@
         `;
         document.head.appendChild(style);
         
+        // Contenu du popup
         popup.innerHTML = `
             <div style="font-size: 50px; margin-bottom: 20px;">🎉</div>
             <h2 style="margin: 0 0 15px 0; font-size: 28px;">Félicitations !</h2>
             <p style="margin: 0 0 20px 0; font-size: 18px; line-height: 1.5;">
                 Votre panier a atteint <strong>${THRESHOLD} DH</strong> !<br>
-                Total actuel : <strong>${total} DH</strong>
+                Total actuel : <strong>${Math.round(total)} DH</strong>
             </p>
             <button onclick="this.closest('#threshold-popup').remove(); document.getElementById('popup-overlay')?.remove();" style="
                 background: white;
@@ -108,9 +137,11 @@
                 font-size: 16px;
                 font-weight: bold;
                 cursor: pointer;
+                border: none;
             ">Super !</button>
         `;
         
+        // Overlay
         const overlay = document.createElement('div');
         overlay.id = 'popup-overlay';
         overlay.style.cssText = `
@@ -123,7 +154,7 @@
             z-index: 9998;
         `;
         
-        overlay.onclick = () => {
+        overlay.onclick = function() {
             popup.remove();
             overlay.remove();
         };
@@ -131,27 +162,41 @@
         document.body.appendChild(overlay);
         document.body.appendChild(popup);
         
+        // Auto-fermeture
         setTimeout(() => {
             if (document.getElementById('threshold-popup')) {
                 document.getElementById('threshold-popup').remove();
                 document.getElementById('popup-overlay')?.remove();
             }
-        }, 10000);
+        }, 8000);
     }
     
-    function checkTotal() {
+    // Vérification du seuil
+    function checkAndShowPopup() {
         const total = getTotalFromDOM();
+        
         if (total && total >= THRESHOLD) {
             const lastTotal = localStorage.getItem(STORAGE_KEY);
-            if (!lastTotal || Math.abs(total - parseFloat(lastTotal)) > 0.01) {
+            
+            if (!lastTotal || Math.abs(total - parseFloat(lastTotal)) > 1) {
                 showPopup(total);
             }
         }
     }
     
-    // Fonction de test
-    window.forcePopup = function() {
+    // Fonctions de test
+    window.testPopup = function() {
         showPopup(1050);
+    };
+    
+    window.testExtract = function(text) {
+        console.log('🧪 Test extraction pour:', text);
+        return extractNumber(text);
+    };
+    
+    window.forceCheck = function() {
+        console.log('🔍 Vérification forcée...');
+        checkAndShowPopup();
     };
     
     window.debugTotal = function() {
@@ -161,24 +206,26 @@
     };
     
     // Exécution
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', checkTotal);
-    } else {
-        checkTotal();
-    }
+    console.log('🔄 Vérification initiale...');
+    setTimeout(checkAndShowPopup, 500);
+    setTimeout(checkAndShowPopup, 1000);
+    setTimeout(checkAndShowPopup, 2000);
     
-    // Réessayer plusieurs fois
-    setTimeout(checkTotal, 1000);
-    setTimeout(checkTotal, 3000);
-    
-    // Observer les clics
+    // Surveiller les clics
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.up') || e.target.closest('.down')) {
-            setTimeout(checkTotal, 500);
+        if (e.target.closest('.up') || e.target.closest('.down') || e.target.closest('.remove')) {
+            console.log('👆 Changement quantité détecté');
+            setTimeout(checkAndShowPopup, 800);
         }
     });
     
-    console.log('✅ Script chargé! Tapez window.forcePopup() pour tester');
-    console.log('📊 Tapez window.debugTotal() pour voir le total actuel');
+    // Vérification périodique
+    setInterval(checkAndShowPopup, 3000);
+    
+    console.log('✅ Script chargé! Commandes:');
+    console.log('  testPopup() - Afficher popup test');
+    console.log('  testExtract("1,050 DH") - Tester extraction');
+    console.log('  debugTotal() - Voir total actuel');
+    console.log('  forceCheck() - Forcer vérification');
     
 })();
