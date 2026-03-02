@@ -1,8 +1,9 @@
 (function() {
     'use strict';
     
-    console.log('🚀 Script de popup - VERSION FINALE 4.0');
+    console.log('🚀 Script de popup - VERSION FINALE 5.1 (ONE-TIME-FIX)');
     console.log('💰 Seuil configuré:', 1000, 'DH');
+    console.log('✨ NOUVEAU: Le popup ne s\'affichera qu\'une seule fois et après clic sur Super, il disparaît définitivement');
     
     // Configuration
     const SELECTORS = {
@@ -14,6 +15,7 @@
     const THRESHOLD = 1000;
     const STORAGE_KEY = 'cart_popup_shown_for_total';
     const POPUP_SHOWN_SESSION = 'cart_popup_shown_session';
+    const POPUP_CLICKED_KEY = 'cart_popup_clicked'; // Nouvelle clé pour le clic sur Super
     
     // Fonction ULTRA-SIMPLE pour extraire le nombre
     function extractNumber(text) {
@@ -58,28 +60,57 @@
         return sessionStorage.getItem(POPUP_SHOWN_SESSION) === 'true';
     }
     
+    // Vérifier si on a déjà cliqué sur Super
+    function hasSuperBeenClicked() {
+        return localStorage.getItem(POPUP_CLICKED_KEY) === 'true';
+    }
+    
+    // Marquer le clic sur Super
+    function markSuperAsClicked() {
+        localStorage.setItem(POPUP_CLICKED_KEY, 'true');
+        console.log('✅ SUPER cliqué - popup désactivé définitivement');
+    }
+    
     // Marquer le popup comme affiché
     function markPopupAsShown() {
         sessionStorage.setItem(POPUP_SHOWN_SESSION, 'true');
+        console.log('📝 Popup marqué comme affiché dans cette session');
     }
     
     // Réinitialiser le marqueur de popup
     function resetPopupMarker() {
         sessionStorage.removeItem(POPUP_SHOWN_SESSION);
+        console.log('🔄 Marqueur de session réinitialisé');
+    }
+    
+    // Réinitialiser le clic sur Super (pour les tests)
+    function resetSuperClicked() {
+        localStorage.removeItem(POPUP_CLICKED_KEY);
+        console.log('🔄 Marqueur SUPER réinitialisé - popup pourra s\'afficher à nouveau');
     }
     
     // Fonction pour afficher le popup
     function showPopup(total) {
-        if (document.getElementById('threshold-popup')) return;
+        // Vérifications multiples avant d'afficher
+        if (document.getElementById('threshold-popup')) {
+            console.log('⏭️ Popup déjà présent sur la page');
+            return;
+        }
+        
+        if (hasSuperBeenClicked()) {
+            console.log('⏭️ SUPER déjà cliqué précédemment - popup désactivé pour toujours');
+            return;
+        }
+        
         if (hasPopupBeenShown()) {
             console.log('⏭️ Popup déjà affiché dans cette session');
             return;
         }
         
-        console.log('🎉 AFFICHAGE POPUP POUR:', total);
+        console.log('🎉 AFFICHAGE POPUP UNIQUE POUR:', total, 'DH');
+        console.log('⚠️ Ce popup ne s\'affichera qu\'une seule fois');
         
-        // Sauvegarder dans localStorage et sessionStorage
-        localStorage.setItem(STORAGE_KEY, total.toString());
+        // Sauvegarder dans sessionStorage seulement
         markPopupAsShown();
         
         // Créer le popup
@@ -122,7 +153,7 @@
                 Votre panier a atteint <strong>${THRESHOLD} DH</strong> !<br>
                 Total actuel : <strong>${Math.round(total)} DH</strong>
             </p>
-            <button onclick="this.closest('#threshold-popup').remove(); document.getElementById('popup-overlay')?.remove();" style="
+            <button id="super-button" style="
                 background: white;
                 color: #764ba2;
                 border: none;
@@ -148,17 +179,33 @@
             z-index: 9998;
         `;
         
-        overlay.onclick = function() {
+        // Fonction pour fermer le popup (sans marquer Super)
+        function closePopup() {
+            console.log('🔒 Fermeture du popup sans clic sur Super');
             popup.remove();
             overlay.remove();
-        };
+        }
+        
+        // Fonction pour fermer avec Super cliqué
+        function closeWithSuper() {
+            console.log('🎯 SUPER cliqué - fermeture et blocage permanent');
+            markSuperAsClicked();
+            popup.remove();
+            overlay.remove();
+        }
+        
+        overlay.onclick = closePopup;
         
         document.body.appendChild(overlay);
         document.body.appendChild(popup);
         
-        // Auto-fermeture
+        // Ajouter l'événement au bouton Super
+        document.getElementById('super-button').addEventListener('click', closeWithSuper);
+        
+        // Auto-fermeture sans marquer Super
         setTimeout(() => {
             if (document.getElementById('threshold-popup')) {
+                console.log('⏱️ Auto-fermeture du popup (8 secondes écoulées)');
                 document.getElementById('threshold-popup').remove();
                 document.getElementById('popup-overlay')?.remove();
             }
@@ -167,24 +214,32 @@
     
     // Vérification du seuil
     function checkAndShowPopup() {
+        // Si Super a déjà été cliqué, ne rien faire
+        if (hasSuperBeenClicked()) {
+            return;
+        }
+        
         const total = getTotalFromDOM();
         
         if (!total) return;
         
-        // Si le total est en dessous du seuil, réinitialiser le marqueur
+        console.log('🔍 Vérification - Total:', total, 'DH | Super cliqué:', hasSuperBeenClicked(), '| Popup affiché:', hasPopupBeenShown());
+        
+        // Si le total est en dessous du seuil, réinitialiser le marqueur de session
         if (total < THRESHOLD) {
             resetPopupMarker();
             return;
         }
         
-        // Si le total est au-dessus du seuil et que le popup n'a pas été affiché
-        if (total >= THRESHOLD && !hasPopupBeenShown()) {
+        // Si le total est au-dessus du seuil et que le popup n'a pas été affiché et que Super n'a pas été cliqué
+        if (total >= THRESHOLD && !hasPopupBeenShown() && !hasSuperBeenClicked()) {
             showPopup(total);
         }
     }
     
     // Fonctions de test
     window.testPopup = function() {
+        console.log('🧪 TEST: Affichage forcé du popup');
         showPopup(1050);
     };
     
@@ -193,15 +248,28 @@
         console.log('🔄 Marqueur de popup réinitialisé');
     };
     
+    window.resetSuper = function() {
+        resetSuperClicked();
+        console.log('🔄 Marqueur SUPER réinitialisé - popup pourra s\'afficher à nouveau');
+    };
+    
+    window.resetAll = function() {
+        resetPopupMarker();
+        resetSuperClicked();
+        console.log('🔄 TOUS les marqueurs réinitialisés');
+    };
+    
     window.debugTotal = function() {
         const total = getTotalFromDOM();
-        console.log('💰 Total actuel:', total);
-        console.log('🚩 Popup déjà affiché:', hasPopupBeenShown());
+        console.log('💰 Total actuel:', total, 'DH');
+        console.log('🚩 Popup déjà affiché dans session:', hasPopupBeenShown());
+        console.log('🚫 SUPER déjà cliqué (permanent):', hasSuperBeenClicked());
         return total;
     };
     
     // Exécution
     console.log('🔄 Vérification initiale...');
+    console.log('🚫 État SUPER cliqué au démarrage:', hasSuperBeenClicked());
     
     // Vérifier au chargement
     setTimeout(checkAndShowPopup, 500);
@@ -210,16 +278,20 @@
     document.addEventListener('click', function(e) {
         if (e.target.closest('.up') || e.target.closest('.down') || 
             e.target.closest('.remove-cart-button') || e.target.closest('.btn-apply-coupon-code')) {
+            console.log('👆 Clic détecté sur élément du panier');
             setTimeout(checkAndShowPopup, 500);
         }
     });
     
     // Vérification périodique (mais moins fréquente)
-    setInterval(checkAndShowPopup, 5000); // Toutes les 5 secondes au lieu de 3
+    setInterval(checkAndShowPopup, 5000);
     
-    console.log('✅ Script chargé! Commandes:');
+    console.log('✅ Script chargé! NOUVELLES COMMANDES:');
     console.log('  testPopup() - Afficher popup test');
-    console.log('  resetPopup() - Réinitialiser le marqueur');
-    console.log('  debugTotal() - Voir total actuel et état');
+    console.log('  resetPopup() - Réinitialiser le marqueur de session');
+    console.log('  resetSuper() - Réinitialiser le marqueur SUPER (pour tests)');
+    console.log('  resetAll() - Réinitialiser TOUS les marqueurs');
+    console.log('  debugTotal() - Voir total actuel et tous les états');
+    console.log('⚠️ IMPORTANT: Après avoir cliqué sur "Super", le popup ne s\'affichera PLUS JAMAIS');
     
 })();
