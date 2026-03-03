@@ -1,6 +1,4 @@
-
-
-// Category Sidebar - Click to Open (Marjanemall Style)
+// Category Sidebar - Click to Open (Marjanemall Style) with Subcategories
 (function() {
     console.log('=== CATEGORY SIDEBAR INIT ===');
     
@@ -97,8 +95,21 @@
             categoriesHTML = `
                 <ul class="menu--dropdown">
                     <li><a href="/product-categories/tubes-de-prelevement">TUBES DE PRELEVEMENT</a></li>
-                    <li><a href="/product-categories/aiguilles-et-accessoires">AIGUILLES ET ACCESSOIRES</a></li>
-                    <li><a href="/product-categories/les-lames-lamelles">CONSOMMABLES DE LABORATOIRE</a></li>
+                    <li class="menu-item-has-children">
+                        <a href="/product-categories/aiguilles-et-accessoires">AIGUILLES ET ACCESSOIRES</a>
+                        <span class="sub-toggle"></span>
+                        <ul class="mega-menu">
+                            <li><a href="/product-categories/aiguilles">AIGUILLES DE PRELEVEMENT</a></li>
+                            <li><a href="/product-categories/accessoires-pour-aiguilles">ACCESSOIRES POUR AIGUILLES</a></li>
+                        </ul>
+                    </li>
+                    <li class="menu-item-has-children">
+                        <a href="/product-categories/les-lames-lamelles">CONSOMMABLES DE LABORATOIRE</a>
+                        <span class="sub-toggle"></span>
+                        <ul class="mega-menu">
+                            <li><a href="/product-categories/les-boites-de-petries">LES BOITES DE PETRIES</a></li>
+                        </ul>
+                    </li>
                     <li><a href="/product-categories/reactifs-de-laboratoire">REACTIFS DE LABORATOIRE</a></li>
                     <li><a href="/product-categories/analyseurs">ANALYSEURS</a></li>
                     <li><a href="/product-categories/equipements-de-laboratoire">EQUIPEMENTS DE LABORATOIRE</a></li>
@@ -148,7 +159,7 @@
                     justify-content: center;
                     border-radius: 50%;
                     transition: background-color 0.2s;
-                ">X</button>
+                ">×</button>
             </div>
             <div style="padding: 10px 0;">
                 ${categoriesHTML}
@@ -166,6 +177,7 @@
             menuList.style.padding = '0';
         }
         
+        // Style all category links
         const links = sidebar.querySelectorAll('.menu--dropdown > li > a');
         links.forEach(link => {
             link.style.cssText = `
@@ -192,6 +204,67 @@
                 this.style.paddingLeft = '20px';
                 this.style.color = '#333';
             });
+        });
+        
+        // Style subcategory links
+        const subLinks = sidebar.querySelectorAll('.mega-menu a, .sub-menu a');
+        subLinks.forEach(link => {
+            link.style.cssText = `
+                padding: 10px 20px 10px 40px;
+                display: block;
+                color: #666;
+                text-decoration: none;
+                border-bottom: 1px solid #f5f5f5;
+                font-size: 13px;
+                transition: all 0.2s;
+            `;
+            
+            link.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f9f9f9';
+                this.style.color = 'rgb(109, 158, 235)';
+                this.style.paddingLeft = '45px';
+            });
+            
+            link.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent';
+                this.style.color = '#666';
+                this.style.paddingLeft = '40px';
+            });
+        });
+        
+        // Style mega menu containers
+        const megaMenus = sidebar.querySelectorAll('.mega-menu');
+        megaMenus.forEach(menu => {
+            menu.style.cssText = `
+                display: none;
+                background-color: #fafafa;
+                border-left: 3px solid rgb(109, 158, 235);
+                margin: 0;
+                padding: 5px 0;
+                list-style: none;
+            `;
+        });
+        
+        // Style sub-toggle buttons
+        const subToggles = sidebar.querySelectorAll('.sub-toggle');
+        subToggles.forEach(toggle => {
+            toggle.style.cssText = `
+                position: absolute;
+                right: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: #999;
+                font-size: 20px;
+                z-index: 10;
+                transition: transform 0.2s;
+            `;
+            toggle.textContent = '+';
         });
         
         const images = sidebar.querySelectorAll('.menu--dropdown img');
@@ -246,6 +319,58 @@
         sidebar.addEventListener('click', function(e) {
             e.stopPropagation();
         });
+        
+        // Initialize subcategory toggles
+        function initSubToggles() {
+            const toggles = sidebar.querySelectorAll('.sub-toggle');
+            
+            toggles.forEach(toggle => {
+                // Remove any existing click listeners
+                toggle.removeEventListener('click', toggleClickHandler);
+                // Add new click listener
+                toggle.addEventListener('click', toggleClickHandler);
+            });
+        }
+        
+        // Toggle click handler
+        function toggleClickHandler(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const toggle = e.currentTarget;
+            const parentLi = toggle.closest('li.menu-item-has-children');
+            
+            if (!parentLi) return;
+            
+            // Find the mega menu or sub-menu
+            const subMenu = parentLi.querySelector('.mega-menu, .sub-menu');
+            
+            if (subMenu) {
+                if (subMenu.style.display === 'none' || subMenu.style.display === '') {
+                    // Open submenu
+                    subMenu.style.display = 'block';
+                    toggle.textContent = '−';
+                    toggle.style.transform = 'translateY(-50%) rotate(0deg)';
+                } else {
+                    // Close submenu
+                    subMenu.style.display = 'none';
+                    toggle.textContent = '+';
+                    toggle.style.transform = 'translateY(-50%) rotate(0deg)';
+                }
+            }
+            
+            console.log('Toggle clicked for:', parentLi.querySelector('a')?.textContent);
+        }
+        
+        // Initialize toggles after sidebar is created
+        initSubToggles();
+        
+        // Re-initialize toggles if new content is added (for dynamic content)
+        const observer = new MutationObserver(function() {
+            initSubToggles();
+        });
+        
+        observer.observe(sidebar, { childList: true, subtree: true });
         
         console.log('Category sidebar initialized successfully');
     }
