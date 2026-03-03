@@ -1,6 +1,6 @@
 // Category Sidebar - Click to Open (Marjanemall Style) with Subcategories
 (function() {
-    console.log('=== CATEGORY SIDEBAR INIT ===');
+    console.log('=== CATEGORY SIDEBAR INIT 2 ===');
     
     // Function to initialize sidebar
     function initCategorySidebar() {
