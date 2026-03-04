@@ -1,0 +1,127 @@
+ 
+/* Force sidebar scrolling and visibility */
+#complete-sidebar {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+#complete-sidebar ul,
+#complete-sidebar li,
+#complete-sidebar div {
+    position: relative !important;
+}
+
+/* Ensure sidebar content can scroll */
+#complete-sidebar > ul {
+    height: auto !important;
+    min-height: 100% !important;
+    padding-bottom: 30px !important;
+}
+
+/* Make sure the sticky header doesn't block scrolling */
+#complete-sidebar > div:first-child {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Disable any conflicting sidebars */
+#category-sidebar-mobile,
+#sidebar-overlay,
+.menu--dropdown {
+    display: none !important;
+}
+
+/* Ensure mobile category button triggers our sidebar */
+.navigation__item[href="#navigation-mobile"] {
+    cursor: pointer !important;
+}
+
+/* Optional: Add a subtle shadow to show sidebar is on top */
+#complete-sidebar {
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2) !important;
+}
+
+/* Optional: Add a semi-transparent overlay when clicking outside to close */
+body.sidebar-open::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 999998;
+    pointer-events: none;
+}
+</style>
+<style>
+/* Force sidebar scrolling and visibility */
+#complete-sidebar {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+#complete-sidebar ul,
+#complete-sidebar li,
+#complete-sidebar div {
+    position: relative !important;
+}
+
+/* Ensure sidebar content can scroll */
+#complete-sidebar > ul {
+    height: auto !important;
+    min-height: 100% !important;
+    padding-bottom: 30px !important;
+}
+
+/* Make sure the sticky header doesn't block scrolling */
+#complete-sidebar > div:first-child {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    flex-shrink: 0 !important;
+}
+
+/* COMPLETELY DISABLE THE MOBILE SIDEBAR THAT CAUSES DARKENING */
+#navigation-mobile,
+.ps-panel--sidebar[id="navigation-mobile"],
+.ps-panel--sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Disable any overlay that might be appearing */
+.ps-site-overlay,
+.modal-backdrop,
+.ps-panel--sidebar + .ps-site-overlay {
+    display: none !important;
+}
+
+/* Disable any conflicting sidebars */
+#category-sidebar-mobile,
+#sidebar-overlay,
+.menu--dropdown {
+    display: none !important;
+}
+
+/* Ensure mobile category button triggers our sidebar */
+.navigation__item[href="#navigation-mobile"] {
+    cursor: pointer !important;
+}
+
+/* Make sure no other elements create darkening */
+body.sidebar-open::after {
+    display: none !important;
+}
