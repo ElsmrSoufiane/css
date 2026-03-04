@@ -120,6 +120,332 @@ body.sidebar-open::after {
 .navigation__item[href="#navigation-mobile"] {
     cursor: pointer !important;
 }
+/* ===== CLEAN QUANTITY INPUT - FIXED BUTTONS ===== */
+
+/* Container */
+.ps-table--shopping-cart .form-group--number,
+.product__qty {
+    position: relative !important;
+    width: 130px !important;
+    height: 44px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+}
+
+/* Input field */
+.ps-table--shopping-cart .form-group--number input[type="number"],
+.ps-table--shopping-cart .form-group--number input.qty-input,
+.product__qty input {
+    width: 100% !important;
+    height: 44px !important;
+    border-radius: 30px !important;
+    text-align: center !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+    padding: 0 40px !important;
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+    line-height: 42px !important;
+}
+
+/* Remove spinner arrows */
+.ps-table--shopping-cart .form-group--number input::-webkit-outer-spin-button,
+.ps-table--shopping-cart .form-group--number input::-webkit-inner-spin-button,
+.product__qty input::-webkit-outer-spin-button,
+.product__qty input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+/* Button base styles - SIMPLE AND CLEAN */
+.ps-table--shopping-cart .form-group--number .down,
+.ps-table--shopping-cart .form-group--number .up,
+.product__qty .down,
+.product__qty .up {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background-color: #f5f5f5 !important;
+    border: none !important;
+    color: #333333 !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    z-index: 10 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+/* Position buttons */
+.ps-table--shopping-cart .form-group--number .down,
+.product__qty .down {
+    left: 4px !important;
+}
+
+.ps-table--shopping-cart .form-group--number .up,
+.product__qty .up {
+    right: 4px !important;
+}
+
+/* Button hover effects - subtle */
+.ps-table--shopping-cart .form-group--number .down:hover,
+.ps-table--shopping-cart .form-group--number .up:hover,
+.product__qty .down:hover,
+.product__qty .up:hover {
+    background-color: #6d9eeb !important;
+    color: white !important;
+    box-shadow: 0 2px 6px rgba(109, 158, 235, 0.3) !important;
+}
+
+/* Button active state */
+.ps-table--shopping-cart .form-group--number .down:active,
+.ps-table--shopping-cart .form-group--number .up:active,
+.product__qty .down:active,
+.product__qty .up:active {
+    transform: translateY(-50%) scale(0.95) !important;
+    background-color: #e0e0e0 !important;
+}
+
+/* Focus state for input */
+.ps-table--shopping-cart .form-group--number input:focus,
+.product__qty input:focus {
+    outline: none !important;
+    border-color: #6d9eeb !important;
+    box-shadow: 0 0 0 2px rgba(109, 158, 235, 0.2) !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .ps-table--shopping-cart .form-group--number,
+    .product__qty {
+        width: 120px !important;
+        height: 40px !important;
+    }
+    
+    .ps-table--shopping-cart .form-group--number input,
+    .product__qty input {
+        height: 40px !important;
+        font-size: 15px !important;
+        padding: 0 35px !important;
+    }
+    
+    .ps-table--shopping-cart .form-group--number .down,
+    .ps-table--shopping-cart .form-group--number .up,
+    .product__qty .down,
+    .product__qty .up {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 16px !important;
+    }
+}
+/* ===== IMPROVED CART QUANTITY BADGE - WITH OVERFLOW ===== */
+.checkout-product-img-wrapper {
+  position: relative !important;
+  overflow: visible !important; /* Allow badge to overflow */
+}
+
+.checkout-product-img-wrapper .checkout-quantity {
+  /* Keep original size but allow overflow */
+  position: absolute !important;
+  top: -8px !important;
+  right: -8px !important;
+  width: 24px !important; /* Keep original size */
+  height: 24px !important; /* Keep original size */
+  background: #ef4444 !important;
+  color: white !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  border: 2px solid white !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3) !important;
+  z-index: 10 !important;
+  line-height: 1 !important;
+  animation: none !important;
+  transform: none !important;
+  /* Ensure it overflows */
+  overflow: visible !important;
+}
+
+/* Make sure parent and grandparents don't clip */
+.checkout-product-img-wrapper,
+.cart-item .col-3,
+.cart-item .col,
+.cart-item,
+.row.cart-item {
+  overflow: visible !important;
+}
+
+/* Mobile - keep same size and overflow */
+@media (max-width: 768px) {
+  .checkout-product-img-wrapper .checkout-quantity {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.8rem !important;
+    top: -8px !important;
+    right: -8px !important;
+    border-width: 2px !important;
+  }
+}
+
+/* ===== ENHANCED PAYMENT METHOD LOGOS - ONLY OVERFLOW ===== */
+.payment-method-logo {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 10px !important;
+  padding: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-height: 40px !important;
+  width: 80px !important;
+  position: relative !important;
+  overflow: visible !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  transition: none !important;
+  z-index: 3 !important;
+  transform: none !important;
+}
+
+/* Make images overflow the container */
+.payment-method-logo img {
+  max-width: none !important;
+  width: 120% !important;
+  height: auto !important;
+  max-height: 50px !important;
+  object-fit: contain !important;
+  filter: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+  transform: scale(1.1) !important;
+  transition: none !important;
+}
+
+/* Specific adjustments for each logo */
+.payment-method-logo:first-of-type img,
+.payment-method-logo img[src*="cod"] {
+  transform: scale(1.15) !important;
+}
+
+.payment-method-logo:last-of-type img,
+.payment-method-logo img[src*="bank-transfer"] {
+  transform: scale(1.2) !important;
+}
+
+/* Remove hover effects */
+.payment-method-logo:hover,
+.payment-method-logo:hover img {
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Make sure all parent elements allow overflow */
+.checkout-product-img-wrapper,
+.cart-item .col-3,
+.cart-item .col,
+.cart-item,
+.row.cart-item,
+.checkout-page,
+.container,
+.row,
+.col-lg-5,
+.col-md-6,
+.order-2,
+.checkout-order-info,
+.my-3,
+.bg-light,
+.position-relative,
+.p-3,
+.cart-item-wrapper,
+.list-group-item,
+.payment-checkout-form,
+.payment-method-item {
+  overflow: visible !important;
+}
+
+/* Position logos in payment method items */
+.list-group-item {
+  position: relative !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  padding: 15px !important;
+  overflow: visible !important;
+}
+
+.list-group-item .payment-method-logo {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  z-index: 3 !important;
+}
+
+/* For RTL support */
+[dir="rtl"] .list-group-item .payment-method-logo {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .list-group-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    overflow: visible !important;
+  }
+  
+  .payment-method-logo {
+    margin-left: 0 !important;
+    margin-top: 10px !important;
+    width: 70px !important;
+    min-height: 35px !important;
+  }
+  
+  .payment-method-logo img {
+    max-height: 45px !important;
+  }
+  
+  .payment-method-logo:first-of-type img,
+  .payment-method-logo img[src*="cod"] {
+    transform: scale(1.15) !important;
+  }
+  
+  .payment-method-logo:last-of-type img,
+  .payment-method-logo img[src*="bank-transfer"] {
+    transform: scale(1.2) !important;
+  }
+}
+
+/* Ensure logos are always visible */
+.list-group-item .payment-method-logo {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+}
+
+/* Force image loading */
+.payment-method-logo img {
+  content-visibility: auto !important;
+  contain: none !important;
+}
 
 /* Make sure no other elements create darkening */
 body.sidebar-open::after {
