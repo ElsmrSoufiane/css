@@ -1,0 +1,233 @@
+#sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+#category-sidebar-mobile {
+    position: fixed;
+    top: 0;
+    left: -320px;
+    width: 300px;
+    height: 100%;
+    background-color: white;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 999999;
+    transition: left 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#category-sidebar-mobile.active {
+    left: 0;
+}
+
+/* Category list styles */
+#category-sidebar-mobile .menu--dropdown {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+}
+
+#category-sidebar-mobile .menu--dropdown > li {
+    position: relative;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+#category-sidebar-mobile .menu--dropdown > li > a {
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+#category-sidebar-mobile .menu--dropdown > li > a:hover {
+    background-color: #f5f5f5;
+    padding-left: 25px;
+    color: rgb(109, 158, 235);
+}
+
+#category-sidebar-mobile .menu--dropdown img {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Subcategory styles */
+#category-sidebar-mobile .menu-item-has-children {
+    position: relative;
+}
+
+#category-sidebar-mobile .sub-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #999;
+    transition: transform 0.2s;
+}
+
+#category-sidebar-mobile .sub-toggle:hover {
+    color: rgb(109, 158, 235);
+}
+
+#category-sidebar-mobile .sub-toggle:after {
+    content: '›';
+    font-size: 20px;
+    line-height: 1;
+}
+
+#category-sidebar-mobile .mega-menu {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-width: auto !important;
+    background: #f9f9f9 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-left: 3px solid rgb(109, 158, 235) !important;
+    margin: 0 !important;
+    padding: 10px 0 10px 20px !important;
+    display: none;
+}
+
+#category-sidebar-mobile .mega-menu__column {
+    margin-bottom: 10px;
+}
+
+#category-sidebar-mobile .mega-menu__column a {
+    padding: 8px 15px;
+    display: block;
+    color: #555;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+#category-sidebar-mobile .mega-menu__column a:hover {
+    background-color: #e9ecef;
+    color: rgb(109, 158, 235);
+}
+
+#category-sidebar-mobile .mega-menu__column h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    padding: 8px 15px;
+    color: #333;
+    background-color: #f1f3f5;
+    border-radius: 4px;
+}
+
+/* Hide original dropdown */
+.menu__content {
+    display: none !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    #category-sidebar-mobile {
+        width: 280px;
+        left: -280px;
+    }
+}
+/* Force sidebar scrolling */
+#complete-sidebar {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+}
+
+#complete-sidebar ul,
+#complete-sidebar li,
+#complete-sidebar div {
+    position: relative !important;
+}
+
+/* Ensure sidebar content can scroll */
+#complete-sidebar > ul {
+    height: auto !important;
+    min-height: 100% !important;
+    padding-bottom: 30px !important;
+}
+
+/* Make sure the sticky header doesn't block scrolling */
+#complete-sidebar > div:first-child {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Disable any conflicting sidebars */
+#category-sidebar-mobile,
+#sidebar-overlay,
+.menu--dropdown {
+    display: none !important;
+}
+#complete-sidebar {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+#complete-sidebar ul,
+#complete-sidebar li,
+#complete-sidebar div {
+    position: relative !important;
+}
+
+/* Ensure sidebar content can scroll */
+#complete-sidebar > ul {
+    height: auto !important;
+    min-height: 100% !important;
+    padding-bottom: 30px !important;
+}
+
+/* Make sure the sticky header doesn't block scrolling */
+#complete-sidebar > div:first-child {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Disable any conflicting sidebars */
+#category-sidebar-mobile,
+#sidebar-overlay,
+.menu--dropdown {
+    display: none !important;
+}
+
+/* Ensure mobile category button triggers our sidebar */
+.navigation__item[href="#navigation-mobile"] {
+    cursor: pointer !important;
+}
