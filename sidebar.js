@@ -796,3 +796,320 @@
       }
     })();
 
+(function() {
+  'use strict';
+  
+  // Function to enhance quantity badges - with overflow
+  function enhanceQuantityBadges() {
+    // First, make sure all parent elements allow overflow
+    document.querySelectorAll('.checkout-product-img-wrapper, .cart-item .col-3, .cart-item .col, .cart-item, .row.cart-item').forEach(el => {
+      el.style.overflow = 'visible !important';
+      el.style.setProperty('overflow', 'visible', 'important');
+    });
+    
+    document.querySelectorAll('.checkout-product-img-wrapper .checkout-quantity').forEach(badge => {
+      // Keep original size but ensure overflow
+      badge.style.cssText = `
+        position: absolute !important;
+        top: -8px !important;
+        right: -8px !important;
+        width: 24px !important;
+        height: 24px !important;
+        background: #ef4444 !important;
+        color: white !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 50% !important;
+        border: 2px solid white !important;
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3) !important;
+        z-index: 10 !important;
+        line-height: 1 !important;
+        animation: none !important;
+        transform: none !important;
+        overflow: visible !important;
+      `;
+      
+      // If quantity is 0 or empty, hide it
+      if (!badge.textContent || badge.textContent.trim() === '0') {
+        badge.style.display = 'none';
+      } else {
+        badge.style.display = 'flex';
+      }
+    });
+  }
+  
+  // Function to enhance payment method logos - only overflow
+  function enhancePaymentLogos() {
+    // Make sure all parent elements allow overflow
+    document.querySelectorAll('.checkout-page, .container, .row, .col-lg-5, .col-md-6, .order-2, .checkout-order-info, .my-3, .bg-light, .position-relative, .p-3, .cart-item-wrapper, .list-group-item, .payment-checkout-form, .payment-method-item').forEach(el => {
+      el.style.overflow = 'visible !important';
+      el.style.setProperty('overflow', 'visible', 'important');
+    });
+    
+    document.querySelectorAll('.payment-method-logo').forEach((logo, index) => {
+      // Keep container minimal
+      logo.style.cssText = `
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-top: 10px !important;
+        padding: 4px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        min-height: 40px !important;
+        width: 80px !important;
+        position: relative !important;
+        overflow: visible !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transition: none !important;
+        z-index: 3 !important;
+        transform: none !important;
+      `;
+      
+      // Find and enhance the image inside
+      const img = logo.querySelector('img');
+      if (img) {
+        // Remove lazy loading attributes
+        img.removeAttribute('data-bb-lazy');
+        img.removeAttribute('loading');
+        
+        // Force image to load and overflow
+        const scale = index === 0 ? '1.15' : '1.2';
+        img.style.cssText = `
+          max-width: none !important;
+          width: 120% !important;
+          height: auto !important;
+          max-height: 50px !important;
+          object-fit: contain !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          filter: none !important;
+          position: relative !important;
+          z-index: 2 !important;
+          transform: scale(${scale}) !important;
+          transition: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        `;
+        
+        // Ensure image source is correct
+        const currentSrc = img.src;
+        if (currentSrc && !img.complete) {
+          img.onload = function() {
+            this.style.opacity = '1';
+          };
+          
+          // Reload image if needed
+          if (!currentSrc || currentSrc === window.location.href) {
+            if (index === 0) {
+              img.src = 'https://teclab.ma/storage/payments/cod.png';
+            } else {
+              img.src = 'https://teclab.ma/storage/payments/bank-transfer.png';
+            }
+          }
+        }
+      }
+      
+      // Remove any event listeners
+      logo.replaceWith(logo.cloneNode(true));
+    });
+  }
+  
+  // Function to watch for DOM changes
+  function watchForChanges() {
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList' || mutation.type === 'attributes') {
+          setTimeout(enhanceQuantityBadges, 50);
+          setTimeout(enhancePaymentLogos, 50);
+        }
+      });
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['src', 'style', 'class']
+    });
+  }
+  
+  // Function to update badge when quantity changes
+  function watchQuantityChanges() {
+    // Watch for quantity input changes
+    document.querySelectorAll('.ec-checkout-quantity input').forEach(input => {
+      input.addEventListener('change', function() {
+        setTimeout(enhanceQuantityBadges, 50);
+      });
+      
+      input.addEventListener('input', function() {
+        setTimeout(enhanceQuantityBadges, 50);
+      });
+    });
+    
+    // Watch for +/- button clicks
+    document.querySelectorAll('.ec-checkout-quantity-control').forEach(btn => {
+      btn.addEventListener('click', function() {
+        setTimeout(enhanceQuantityBadges, 100);
+        setTimeout(enhanceQuantityBadges, 300);
+      });
+    });
+    
+    // Watch for remove cart button
+    document.querySelectorAll('.remove-cart-button').forEach(btn => {
+      btn.addEventListener('click', function() {
+        setTimeout(enhanceQuantityBadges, 300);
+      });
+    });
+  }
+  
+  // Initialize everything
+  function init() {
+    enhanceQuantityBadges();
+    enhancePaymentLogos();
+    watchQuantityChanges();
+    watchForChanges();
+    
+    // Run again after delays
+    setTimeout(enhanceQuantityBadges, 200);
+    setTimeout(enhancePaymentLogos, 200);
+    setTimeout(enhanceQuantityBadges, 500);
+    setTimeout(enhancePaymentLogos, 500);
+    
+    console.log('✅ Quantity badge (with overflow) and payment logos (overflow only) loaded');
+  }
+  
+  // Run when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+  // ===== CLEAN QUANTITY INPUT HANDLER =====
+(function() {
+    'use strict';
+    
+    function fixQuantityInputs() {
+        // Find all quantity containers
+        const containers = document.querySelectorAll('.form-group--number, .product__qty');
+        
+        containers.forEach(container => {
+            const input = container.querySelector('input[type="number"], input.qty-input');
+            if (!input) return;
+            
+            // Skip if already processed
+            if (container.getAttribute('data-fixed') === 'true') return;
+            container.setAttribute('data-fixed', 'true');
+            
+            // Ensure input has proper attributes
+            input.setAttribute('min', '1');
+            input.setAttribute('step', '1');
+            
+            // Get or create buttons
+            let downBtn = container.querySelector('.down');
+            let upBtn = container.querySelector('.up');
+            
+            // If buttons don't exist, create them
+            if (!downBtn) {
+                downBtn = document.createElement('button');
+                downBtn.className = 'down';
+                downBtn.type = 'button';
+                downBtn.textContent = '−'; // Minus sign
+                container.appendChild(downBtn);
+            }
+            
+            if (!upBtn) {
+                upBtn = document.createElement('button');
+                upBtn.className = 'up';
+                upBtn.type = 'button';
+                upBtn.textContent = '+';
+                container.appendChild(upBtn);
+            }
+            
+            // Remove old event listeners by cloning and replacing
+            const newDown = downBtn.cloneNode(true);
+            const newUp = upBtn.cloneNode(true);
+            downBtn.parentNode.replaceChild(newDown, downBtn);
+            upBtn.parentNode.replaceChild(newUp, upBtn);
+            
+            // Add new event listeners
+            newDown.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                let val = parseInt(input.value) || 1;
+                if (val > 1) {
+                    input.value = val - 1;
+                    // Trigger change event
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+            
+            newUp.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                let val = parseInt(input.value) || 1;
+                input.value = val + 1;
+                // Trigger change event
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            
+            // Input validation
+            input.addEventListener('input', function(e) {
+                // Remove non-numeric characters
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value === '' || parseInt(this.value) < 1) {
+                    this.value = 1;
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                if (this.value === '' || parseInt(this.value) < 1) {
+                    this.value = 1;
+                }
+            });
+        });
+    }
+    
+    // Run immediately
+    fixQuantityInputs();
+    
+    // Run after DOM changes
+    const observer = new MutationObserver(function(mutations) {
+        let shouldFix = false;
+        mutations.forEach(mutation => {
+            if (mutation.target.closest('.ps-table--shopping-cart') || 
+                mutation.target.closest('.ps-cart__content') ||
+                mutation.addedNodes.length > 0) {
+                shouldFix = true;
+            }
+        });
+        if (shouldFix) {
+            setTimeout(fixQuantityInputs, 100);
+        }
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    // Run on clicks that might update cart
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.up') || e.target.closest('.down') || 
+            e.target.closest('.remove-cart-button') ||
+            e.target.closest('.btn-apply-coupon-code')) {
+            setTimeout(fixQuantityInputs, 200);
+        }
+    });
+    
+    console.log('✅ Clean quantity input handler loaded');
+})();
